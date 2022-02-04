@@ -1,70 +1,68 @@
-work.constants.all;
+use work.registerConstants.all;
 
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-entity registerBlock is
+entity dualBusRegisterBlock is
     port (
-        rst                     : in std_logic;
-        clk                     : in std_logic;
-        outputBusAddrDataFlag   : in std_logic; -- Addr=0, Data=1
-        registerReadWriteFlag   : in std_logic; -- Read=0, Write=1
-        registerLowHighByte     : in std_logic; -- Low=0, High=1
-        registerSelect          : in std_logic_vector (regSelectWidth-1 downto 0);
-        dataBus                 : inout std_logic_vector (registerWidth-1 downto 0);
-        addrBus                 : inout std_logic_vector (addressWidth-1 downto 0)
+        rst        : in std_logic;
+        clk        : in std_logic;
+        wideOutEn  : in std_logic;
+        halfOutEn  : in std_logic;
+        halfLHSel  : in std_logic;  -- Low=0, High=1
+        rw         : in std_logic;  -- Read=1, Write=0
+        addrBus    : in std_logic_vector (regAddrBusWidth-1 downto 0);
+        dataBusWide: out std_logic_vector (regDataBusWideWidth-1 downto 0);
+        dataBusHalf: inout std_logic_vector (regDataBusHalfWidth-1 downto 0)
     );
-end registerBlock;
+end dualBusRegisterBlock;
 
-architecture rtl of registerBlock is
-    signal regAB        : std_logic_vector (registerBlockWidth-1 downto 0);
-    signal regCD        : std_logic_vector (registerBlockWidth-1 downto 0);
-
-    signal internalReadBus  : std_logic_vector (registerBlockWidth-1 downto 0);
-    signal internalWriteBus  : std_logic_vector (registerBlockWidth-1 downto 0);
+architecture rtl of dualBusRegisterBlock is
+    signal internalDataBusHalf          : std_logic_vector (regDataBusHalfWidth-1 downto 0) := (others => '0');
+    signal internalDataBusWide          : std_logic_vector (regDataBusWideWidth-1 downto 0) := (others => '0');
+    
+    type registerBlockType is array (0 to 3) of std_logic_vector (regDataBusWideWidth-1 downto 0);
+    signal registerBlockArray : registerBlockType := (others => (others => '0'));
 begin
+    dataBusHalf <= internalDataBusHalf when halfOutEn = '1' else (others => 'Z');
+    dataBusWide <= internalDataBusWide when wideOutEn = '1' else (others => 'Z');
 
-    registerResetProcess : process (rst) is
+    readProcess : process (rw, addrBus, wideOutEn, halfOutEn, halfLHSel) is
+    begin
+        if rw = '1' then
+            if wideOutEn = '1' then
+                internalDataBusWide <= registerBlockArray(to_integer(unsigned(addrBus)));
+            end if;
+
+            if halfOutEn = '1' then
+                if halfLHSel = '0' then
+                    internalDataBusHalf <= registerBlockArray(to_integer(unsigned(addrBus))) (regDataBusHalfWidth-1 downto 0);
+                else
+                    internalDataBusHalf <= registerBlockArray(to_integer(unsigned(addrBus))) (regDataBusWideWidth-1 downto regDataBusHalfWidth);
+                end if;
+            end if;
+        end if;
+    end process;
+
+    writeProcess : process (clk, rst) is
     begin
         if rst = '1' then
-            regAB <= (others => '0');
-            regCD <= (others => '0');
+            registerBlockArray <= (others => (others => '0'));
+        elsif rising_edge(clk) and rw = '0' then
+            if halfLHSel = '0' then
+                registerBlockArray(to_integer(unsigned(addrBus))) (regDataBusHalfWidth-1 downto 0) <= dataBusHalf;
+            else
+                registerBlockArray(to_integer(unsigned(addrBus))) (regDataBusWideWidth-1 downto regDataBusHalfWidth) <= dataBusHalf;
+            end if;
         end if;
     end process;
-
-    -- Register reading is combinational.
-    registerReadProcess : process (registerReadWriteFlag, registerSelect) is
-        if registerReadWriteFlag = '0' then
-            case unsigned(registerSelect) is
-                when 1 => 
-                    internalReadBus <= regAB;
-                when 2 => 
-                    internalReadBus <= regCD;
-                when others => 
-                    internalReadBus <= (others => '0);
-            end case;
-        end if;
-    end process;
-
-    -- Register writing is clocked.
-    registerWriteProcess : process (clk) is
-        if rising_edge(clk) and registerReadWriteFlag = '1' then
-            case unsigned(registerSelect) is
-                when 1 => 
-                    regAB <= internalWriteBus;
-                when 2 => 
-                    regCD <= internalWriteBus;
-            end case;
-        end if;
-    end process
-
-    -- Connect the internal busses to the correct input/output
-    registerBusSelectProcess : process (outputBusAddrDataFlag, registerReadWriteFlag, registerLowHighByte) is
-        -- Address Bus - Full 16 bits
-        if outputBusAddrDataFlag = '0' and registerReadWriteFlag = '0' then
-            -- Read from address bus
-
-                
-
 end rtl;
+
+
+
+
+
+
+
+
