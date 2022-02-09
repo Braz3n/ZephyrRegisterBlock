@@ -20,6 +20,7 @@ architecture behavioural of register_tb is
         halfOutEn   : in std_logic;
         halfLHSel   : in std_logic;
         rw          : in std_logic;
+        incrementPC : in std_logic;
         addrBus     : in std_logic_vector (regAddrBusWidth-1 downto 0);
         dataBusWide : out std_logic_vector (regDataBusWideWidth-1 downto 0);
         dataBusHalf : inout std_logic_vector (regDataBusHalfWidth-1 downto 0)
@@ -35,6 +36,7 @@ architecture behavioural of register_tb is
     signal halfOutEn   : std_logic;
     signal halfLHSel   : std_logic;
     signal rw          : std_logic;
+    signal incrementPC : std_logic;
     signal addrBus     : std_logic_vector (regAddrBusWidth-1 downto 0);
     signal dataBusWide : std_logic_vector (regDataBusWideWidth-1 downto 0);
     signal dataBusHalf : std_logic_vector (regDataBusHalfWidth-1 downto 0);
@@ -48,6 +50,7 @@ begin
         halfOutEn   => halfOutEn,
         halfLHSel   => halfLHSel,
         rw          => rw,
+        incrementPC => incrementPC,
         addrBus     => addrBus,
         dataBusWide => dataBusWide,
         dataBusHalf => dataBusHalf
@@ -57,9 +60,9 @@ begin
     process 
     begin 
         clk <= '0';
-        wait for 10 fs;
+        wait for 10 ns;
         clk <= '1';
-        wait for 10 fs;
+        wait for 10 ns;
     end process;
 
     -- Actual working process block.
@@ -70,6 +73,7 @@ begin
             halfOutEn   : std_logic;
             halfLHSel   : std_logic;
             rw          : std_logic;
+            incrementPC : std_logic;
             addrBus     : std_logic_vector (regAddrBusWidth-1 downto 0);
             dataBusWide : std_logic_vector (regDataBusWideWidth-1 downto 0);
             dataBusHalf : std_logic_vector (regDataBusHalfWidth-1 downto 0);
@@ -79,29 +83,36 @@ begin
         
         constant test_pattern : test_pattern_array :=
         (
-            ('0', '0', '0', '0', '0', "00", "0000000000000000", "10101010"),  -- Load 170 into low byte of reg0
-            ('0', '0', '0', '1', '0', "00", "0000000000000000", "11110000"),  -- Load 240 into high byte of reg0
-            ('0', '1', '0', '0', '1', "00", "1111000010101010", "ZZZZZZZZ"),   -- Read out ADDR bus
-            ('0', '0', '1', '0', '1', "00", "ZZZZZZZZZZZZZZZZ", "10101010"),   -- Read out low byte of reg0
-            ('0', '0', '1', '1', '1', "00", "ZZZZZZZZZZZZZZZZ", "11110000"),   -- Read out high byte of reg0
+            ('0', '0', '0', '0', '0', '0', "00", "----------------", "10101010"),  -- Load 170 into low byte of reg0
+            ('0', '0', '0', '1', '0', '0', "00", "----------------", "11110000"),  -- Load 240 into high byte of reg0
+            ('0', '1', '0', '0', '1', '0', "00", "1111000010101010", "--------"),  -- Read out ADDR bus
+            ('0', '0', '1', '0', '1', '0', "00", "----------------", "10101010"),  -- Read out low byte of reg0
+            ('0', '0', '1', '1', '1', '0', "00", "----------------", "11110000"),  -- Read out high byte of reg0
+            ('0', '0', '0', '0', '0', '0', "00", "----------------", "11111110"),  -- Load 254 into low byte of reg0
+            ('0', '0', '0', '0', '0', '1', "00", "----------------", "--------"),  -- Increment reg0
+            ('0', '0', '0', '0', '0', '1', "00", "----------------", "--------"),  -- Increment reg0
+            ('0', '0', '0', '0', '0', '1', "00", "----------------", "--------"),  -- Increment reg0
+            ('0', '0', '1', '0', '1', '0', "00", "----------------", "00000001"),  -- Read out low byte of reg0
+            ('0', '0', '1', '1', '1', '0', "00", "----------------", "11110001"),  -- Read out high byte of reg0
+            ('0', '1', '0', '0', '1', '0', "00", "1111000100000001", "--------"),  -- Read out ADDR bus
 
-            ('0', '0', '0', '0', '0', "01", "0000000000000000", "10101010"),  -- Load 170 into low byte of reg1
-            ('0', '0', '0', '1', '0', "01", "0000000000000000", "11110000"),  -- Load 240 into high byte of reg1
-            ('0', '1', '0', '0', '1', "01", "1111000010101010", "ZZZZZZZZ"),   -- Read out ADDR bus
-            ('0', '0', '1', '0', '1', "01", "ZZZZZZZZZZZZZZZZ", "10101010"),   -- Read out low byte of reg1
-            ('0', '0', '1', '1', '1', "01", "ZZZZZZZZZZZZZZZZ", "11110000"),   -- Read out high byte of reg1
+            ('0', '0', '0', '0', '0', '0', "01", "----------------", "10101010"),  -- Load 170 into low byte of reg1
+            ('0', '0', '0', '1', '0', '0', "01", "----------------", "11110000"),  -- Load 240 into high byte of reg1
+            ('0', '1', '0', '0', '1', '0', "01", "1111000010101010", "--------"),  -- Read out ADDR bus
+            ('0', '0', '1', '0', '1', '0', "01", "----------------", "10101010"),  -- Read out low byte of reg1
+            ('0', '0', '1', '1', '1', '0', "01", "----------------", "11110000"),  -- Read out high byte of reg1
             
-            ('0', '0', '0', '0', '0', "10", "0000000000000000", "10101010"),  -- Load 170 into low byte of reg2
-            ('0', '0', '0', '1', '0', "10", "0000000000000000", "11110000"),  -- Load 240 into high byte of reg2
-            ('0', '1', '0', '0', '1', "10", "1111000010101010", "ZZZZZZZZ"),   -- Read out ADDR bus
-            ('0', '0', '1', '0', '1', "10", "ZZZZZZZZZZZZZZZZ", "10101010"),   -- Read out low byte of reg3
-            ('0', '0', '1', '1', '1', "10", "ZZZZZZZZZZZZZZZZ", "11110000"),   -- Read out high byte of reg3
+            ('0', '0', '0', '0', '0', '0', "10", "----------------", "10101010"),  -- Load 170 into low byte of reg2
+            ('0', '0', '0', '1', '0', '0', "10", "----------------", "11110000"),  -- Load 240 into high byte of reg2
+            ('0', '1', '0', '0', '1', '0', "10", "1111000010101010", "--------"),  -- Read out ADDR bus
+            ('0', '0', '1', '0', '1', '0', "10", "----------------", "10101010"),  -- Read out low byte of reg3
+            ('0', '0', '1', '1', '1', '0', "10", "----------------", "11110000"),  -- Read out high byte of reg3
 
-            ('0', '0', '0', '0', '0', "11", "0000000000000000", "10101010"),  -- Load 170 into low byte of reg4
-            ('0', '0', '0', '1', '0', "11", "0000000000000000", "11110000"),  -- Load 240 into high byte of reg4
-            ('0', '1', '0', '0', '1', "11", "1111000010101010", "ZZZZZZZZ"),   -- Read out ADDR bus
-            ('0', '0', '1', '0', '1', "11", "ZZZZZZZZZZZZZZZZ", "10101010"),   -- Read out low byte of reg4
-            ('0', '0', '1', '1', '1', "11", "ZZZZZZZZZZZZZZZZ", "11110000")   -- Read out high byte of reg4
+            ('0', '0', '0', '0', '0', '0', "11", "----------------", "10101010"),  -- Load 170 into low byte of reg4
+            ('0', '0', '0', '1', '0', '0', "11", "----------------", "11110000"),  -- Load 240 into high byte of reg4
+            ('0', '1', '0', '0', '1', '0', "11", "1111000010101010", "--------"),  -- Read out ADDR bus
+            ('0', '0', '1', '0', '1', '0', "11", "----------------", "10101010"),  -- Read out low byte of reg4
+            ('0', '0', '1', '1', '1', '0', "11", "----------------", "11110000")   -- Read out high byte of reg4
         );
     begin
 
@@ -112,11 +123,12 @@ begin
             halfOutEn <= test_pattern(i).halfOutEn;
             halfLHSel <= test_pattern(i).halfLHSel;
             rw <= test_pattern(i).rw;
+            incrementPC <= test_pattern(i).incrementPC;
             addrBus <= test_pattern(i).addrBus;
             dataBusHalf <= test_pattern(i).dataBusHalf;
             dataBusWide <= test_pattern(i).dataBusWide;
 
-            wait for 20 fs;
+            wait for 20 ns;
 
             if test_pattern(i).wideOutEn = '1' and test_pattern(i).rw = '1' then
                 assert dataBusWide = test_pattern(i).dataBusWide
