@@ -8,48 +8,31 @@ entity dualBusRegisterBlock is
     port (
         rst         : in std_logic;
         clk         : in std_logic;
-        wideOutEn   : in std_logic;
-        halfOutEn   : in std_logic;
-        halfLHSel   : in std_logic;  -- Low=0, High=1
-        rw          : in std_logic;  -- Read=1, Write=0
-        incrementPC : in std_logic;
-        addrBus     : in std_logic_vector (regAddrBusWidth-1 downto 0);
+        opCode      : in std_logic_vector (regOpCodeWidth-1 downto 0);
+        regAddrBus  : in std_logic_vector (regAddrBusWidth-1 downto 0);
         dataBusWide : out std_logic_vector (regDataBusWideWidth-1 downto 0);
         dataBusHalf : inout std_logic_vector (regDataBusHalfWidth-1 downto 0)
     );
 end dualBusRegisterBlock;
 
 architecture rtl of dualBusRegisterBlock is
-    signal internalDataBusHalf          : std_logic_vector (regDataBusHalfWidth-1 downto 0) := (others => '0');
-    signal internalDataBusWide          : std_logic_vector (regDataBusWideWidth-1 downto 0) := (others => '0');
-    
     type registerBlockType is array (0 to regCount-1) of std_logic_vector (regDataBusWideWidth-1 downto 0);
     signal registerBlockArray : registerBlockType := (others => (others => '0'));
 begin
-    dataBusHalf <= internalDataBusHalf when halfOutEn = '1' else (others => 'Z');
-    dataBusWide <= internalDataBusWide when wideOutEn = '1' else (others => 'Z');
-
-    readProcess : process (rw, addrBus, wideOutEn, halfOutEn, halfLHSel) is
+    readProcess : process (opCode, regAddrBus) is
     begin
-        if rw = '1' then
-            if wideOutEn = '1' then
-                internalDataBusWide <= registerBlockArray(to_integer(unsigned(addrBus)));
-            else
-                internalDataBusWide <= (others => '0');
-            end if;
-
-            if halfOutEn = '1' then
-                if halfLHSel = '0' then
-                    internalDataBusHalf <= registerBlockArray(to_integer(unsigned(addrBus))) (regDataBusHalfWidth-1 downto 0);
-                else
-                    internalDataBusHalf <= registerBlockArray(to_integer(unsigned(addrBus))) (regDataBusWideWidth-1 downto regDataBusHalfWidth);
-                end if;
-            else
-                internalDataBusHalf <= (others => '0');
-            end if;
+        if opCode = regHalfOutL then
+            dataBusHalf <= registerBlockArray(to_integer(unsigned(regAddrBus))) (regDataBusHalfWidth-1 downto 0);
+        elsif opCode = regHalfOutH then
+            dataBusHalf <= registerBlockArray(to_integer(unsigned(regAddrBus))) (regDataBusWideWidth-1 downto regDataBusHalfWidth);
         else
-            internalDataBusWide <= (others => '0');
-            internalDataBusHalf <= (others => '0');         
+            dataBusHalf <= (others => 'Z');
+        end if;
+
+        if opCode = regWideOut then
+            dataBusWide <= registerBlockArray(to_integer(unsigned(regAddrBus)));
+        else
+            dataBusWide <= (others => 'Z');
         end if;
     end process;
 
@@ -57,27 +40,18 @@ begin
     begin
         if rst = '1' then
             registerBlockArray <= (others => (others => '0'));
-        elsif rising_edge(clk) and rw = '0' then
-            if to_integer(unsigned(addrBus)) = PC then
-                if incrementPC = '1' then
-                    registerBlockArray(PC) <= std_logic_vector(unsigned(registerBlockArray(PC)) + 1);
-                else
-                    if halfLHSel = '0' then
-                        registerBlockArray(PC) (regDataBusHalfWidth-1 downto 0) <= dataBusHalf;
-                    else
-                        registerBlockArray(PC) (regDataBusWideWidth-1 downto regDataBusHalfWidth) <= dataBusHalf;
-                    end if;
-                end if;
-            else
-                if halfLHSel = '0' then
-                    registerBlockArray(to_integer(unsigned(addrBus))) (regDataBusHalfWidth-1 downto 0) <= dataBusHalf;
-                else
-                    registerBlockArray(to_integer(unsigned(addrBus))) (regDataBusWideWidth-1 downto regDataBusHalfWidth) <= dataBusHalf;
-                end if;
+        elsif rising_edge(clk) then
+            if opCode = regCpyToPC then
+                registerBlockArray(regPC) <= registerBlockArray(to_integer(unsigned(regAddrBus)));
+            elsif opCode = regIncPC then
+                registerBlockArray(regPC) <= std_logic_vector(unsigned(registerBlockArray(regPC)) + 1);
+            elsif opCode = regHalfInL then
+                registerBlockArray(to_integer(unsigned(regAddrBus))) (regDataBusHalfWidth-1 downto 0) <= dataBusHalf;
+            elsif opCode = regHalfInH then
+                registerBlockArray(to_integer(unsigned(regAddrBus))) (regDataBusWideWidth-1 downto regDataBusHalfWidth) <= dataBusHalf;
             end if;
         end if;
     end process;
-
 end rtl;
 
 
