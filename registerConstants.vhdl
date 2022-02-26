@@ -18,7 +18,6 @@ package registerConstants is
     constant regHalfInL  : std_logic_vector(regOpCodeWidth-1 downto 0) := "100";
     constant regHalfInH  : std_logic_vector(regOpCodeWidth-1 downto 0) := "101";
     constant regWideOut  : std_logic_vector(regOpCodeWidth-1 downto 0) := "110";
-    constant regIncPC    : std_logic_vector(regOpCodeWidth-1 downto 0) := "111";
 
     -- Register indicies
     constant regPC : integer := 0; -- Program Counter

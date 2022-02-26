@@ -16,6 +16,7 @@ architecture behavioural of register_tb is
     port (
         rst         : in std_logic;
         clk         : in std_logic;
+        incPC       : in std_logic;
         opCode      : in std_logic_vector (regOpCodeWidth-1 downto 0);
         regAddrBus  : in std_logic_vector (regAddrBusWidth-1 downto 0);
         dataBusWide : out std_logic_vector (regDataBusWideWidth-1 downto 0);
@@ -28,6 +29,7 @@ architecture behavioural of register_tb is
 
     signal rst         : std_logic;
     signal clk         : std_logic;
+    signal incPC       : std_logic;
     signal opCode      : std_logic_vector (regOpCodeWidth-1 downto 0);
     signal regAddrBus  : std_logic_vector (regAddrBusWidth-1 downto 0);
     signal dataBusWide : std_logic_vector (regDataBusWideWidth-1 downto 0);
@@ -39,6 +41,7 @@ begin
     (
         rst         => rst,
         clk         => clk,
+        incPC       => incPC,
         opCode      => opCode,
         regAddrBus  => regAddrBus,
         dataBusWide => dataBusWide,
@@ -58,6 +61,7 @@ begin
     process
         type test_pattern_type is record
             rst         : std_logic;
+            incPC       : std_logic;
             opCode      : std_logic_vector (regOpCodeWidth-1 downto 0);
             regAddrBus  : std_logic_vector (regAddrBusWidth-1 downto 0);
             dataBusWide : std_logic_vector (regDataBusWideWidth-1 downto 0);
@@ -69,52 +73,52 @@ begin
         constant test_pattern : test_pattern_array :=
         (   
             -- Test Program Counter
-            ('0', regHalfInL,  regPC_slv, "----------------", "10101010"),  -- Load 170 into low byte of regPC
-            ('0', regHalfInH,  regPC_slv, "----------------", "11110000"),  -- Load 240 into high byte of regPC
-            ('0', regWideOut,  regPC_slv, "1111000010101010", "--------"),  -- Read out ADDR bus
-            ('0', regHalfInL,  regPC_slv, "----------------", "10101010"),  -- Read out low byte of regPC
-            ('0', regHalfInH,  regPC_slv, "----------------", "11110000"),  -- Read out high byte of regPC
-            ('0', regHalfInL,  regPC_slv, "----------------", "11111110"),  -- Load 254 into low byte of regPC
-            ('0', regIncPC,    regPC_slv, "----------------", "--------"),  -- Increment regPC
-            ('0', regIncPC,    regPC_slv, "----------------", "--------"),  -- Increment regPC
-            ('0', regIncPC,    regPC_slv, "----------------", "--------"),  -- Increment regPC
-            ('0', regHalfOutL, regPC_slv, "----------------", "00000001"),  -- Read out low byte of regPC
-            ('0', regHalfOutH, regPC_slv, "----------------", "11110001"),  -- Read out high byte of regPC
-            ('0', regWideOut,  regPC_slv, "1111000100000001", "--------"),  -- Read out PC onto the ADDR bus
+            ('0', '0', regHalfInL,  regPC_slv, "----------------", "10101010"),  -- Load 170 into low byte of regPC
+            ('0', '0', regHalfInH,  regPC_slv, "----------------", "11110000"),  -- Load 240 into high byte of regPC
+            ('0', '0', regWideOut,  regPC_slv, "1111000010101010", "--------"),  -- Read out ADDR bus
+            ('0', '0', regHalfInL,  regPC_slv, "----------------", "10101010"),  -- Read out low byte of regPC
+            ('0', '0', regHalfInH,  regPC_slv, "----------------", "11110000"),  -- Read out high byte of regPC
+            ('0', '0', regHalfInL,  regPC_slv, "----------------", "11111110"),  -- Load 254 into low byte of regPC
+            ('0', '1', regNOP,      regPC_slv, "----------------", "--------"),  -- Increment regPC
+            ('0', '1', regNOP,      regPC_slv, "----------------", "--------"),  -- Increment regPC
+            ('0', '1', regNOP,      regPC_slv, "----------------", "--------"),  -- Increment regPC
+            ('0', '0', regHalfOutL, regPC_slv, "----------------", "00000001"),  -- Read out low byte of regPC
+            ('0', '0', regHalfOutH, regPC_slv, "----------------", "11110001"),  -- Read out high byte of regPC
+            ('0', '0', regWideOut,  regPC_slv, "1111000100000001", "--------"),  -- Read out PC onto the ADDR bus
 
             -- Test Register A
-            ('0', regHalfInL,  regA_slv,  "----------------", "10101010"),  -- Load 170 into low byte of regA
-            ('0', regHalfInH,  regA_slv,  "----------------", "11110000"),  -- Load 240 into high byte of regA
-            ('0', regWideOut,  regA_slv,  "1111000010101010", "--------"),  -- Read out regA onto ADDR bus
-            ('0', regHalfOutL, regA_slv,  "----------------", "10101010"),  -- Read out low byte of regA
-            ('0', regHalfOutH, regA_slv,  "----------------", "11110000"),  -- Read out high byte of regA
+            ('0', '0', regHalfInL,  regA_slv,  "----------------", "10101010"),  -- Load 170 into low byte of regA
+            ('0', '0', regHalfInH,  regA_slv,  "----------------", "11110000"),  -- Load 240 into high byte of regA
+            ('0', '0', regWideOut,  regA_slv,  "1111000010101010", "--------"),  -- Read out regA onto ADDR bus
+            ('0', '0', regHalfOutL, regA_slv,  "----------------", "10101010"),  -- Read out low byte of regA
+            ('0', '0', regHalfOutH, regA_slv,  "----------------", "11110000"),  -- Read out high byte of regA
             
             -- Test Register B
-            ('0', regHalfInL,  regB_slv,  "----------------", "10101010"),  -- Load 170 into low byte of regB
-            ('0', regHalfInH,  regB_slv,  "----------------", "11110000"),  -- Load 240 into high byte of regB
-            ('0', regWideOut,  regB_slv,  "1111000010101010", "--------"),  -- Read out regB onto ADDR bus
-            ('0', regHalfOutL, regB_slv,  "----------------", "10101010"),  -- Read out low byte of regB
-            ('0', regHalfOutH, regB_slv,  "----------------", "11110000"),  -- Read out high byte of regB
+            ('0', '0', regHalfInL,  regB_slv,  "----------------", "10101010"),  -- Load 170 into low byte of regB
+            ('0', '0', regHalfInH,  regB_slv,  "----------------", "11110000"),  -- Load 240 into high byte of regB
+            ('0', '0', regWideOut,  regB_slv,  "1111000010101010", "--------"),  -- Read out regB onto ADDR bus
+            ('0', '0', regHalfOutL, regB_slv,  "----------------", "10101010"),  -- Read out low byte of regB
+            ('0', '0', regHalfOutH, regB_slv,  "----------------", "11110000"),  -- Read out high byte of regB
 
             -- Test Register C
-            ('0', regHalfInL,  regC_slv,  "----------------", "10101010"),  -- Load 170 into low byte of regC
-            ('0', regHalfInH,  regC_slv,  "----------------", "11110000"),  -- Load 240 into high byte of regC
-            ('0', regWideOut,  regC_slv,  "1111000010101010", "--------"),  -- Read out regC onto ADDR bus
-            ('0', regHalfOutL, regC_slv,  "----------------", "10101010"),  -- Read out low byte of regC
-            ('0', regHalfOutH, regC_slv,  "----------------", "11110000"),  -- Read out high byte of regC
+            ('0', '0', regHalfInL,  regC_slv,  "----------------", "10101010"),  -- Load 170 into low byte of regC
+            ('0', '0', regHalfInH,  regC_slv,  "----------------", "11110000"),  -- Load 240 into high byte of regC
+            ('0', '0', regWideOut,  regC_slv,  "1111000010101010", "--------"),  -- Read out regC onto ADDR bus
+            ('0', '0', regHalfOutL, regC_slv,  "----------------", "10101010"),  -- Read out low byte of regC
+            ('0', '0', regHalfOutH, regC_slv,  "----------------", "11110000"),  -- Read out high byte of regC
 
             -- Test regCpyToPC
-            ('1', regNOP,      regPC_slv, "----------------", "--------"),  -- Reset the registers
-            ('0', regHalfInL,  regA_slv,  "----------------", "10101111"),  -- Load 1 into low byte of regA
-            ('0', regHalfInH,  regB_slv,  "----------------", "11110000"),  -- Load 1 into high byte of regB
-            ('0', regHalfInL,  regC_slv,  "----------------", "11001100"),  -- Load 1 into low byte of regC
-            ('0', regHalfInH,  regC_slv,  "----------------", "11100011"),  -- Load 1 into high byte of regC
-            ('0', regCpyToPC,  regA_slv,  "----------------", "--------"),  -- Copy regA value into regPC
-            ('0', regWideOut,  regPC_slv, "0000000010101111", "--------"),  -- Read out PC onto the ADDR bus
-            ('0', regCpyToPC,  regB_slv,  "----------------", "--------"),  -- Copy regB value into regPC
-            ('0', regWideOut,  regPC_slv, "1111000000000000", "--------"),  -- Read out PC onto the ADDR bus
-            ('0', regCpyToPC,  regC_slv,  "----------------", "--------"),  -- Copy regC value into regPC
-            ('0', regWideOut,  regPC_slv, "1110001111001100", "--------")   -- Read out PC onto the ADDR bus
+            ('1', '0', regNOP,      regPC_slv, "----------------", "--------"),  -- Reset the registers
+            ('0', '0', regHalfInL,  regA_slv,  "----------------", "10101111"),  -- Load 1 into low byte of regA
+            ('0', '0', regHalfInH,  regB_slv,  "----------------", "11110000"),  -- Load 1 into high byte of regB
+            ('0', '0', regHalfInL,  regC_slv,  "----------------", "11001100"),  -- Load 1 into low byte of regC
+            ('0', '0', regHalfInH,  regC_slv,  "----------------", "11100011"),  -- Load 1 into high byte of regC
+            ('0', '0', regCpyToPC,  regA_slv,  "----------------", "--------"),  -- Copy regA value into regPC
+            ('0', '0', regWideOut,  regPC_slv, "0000000010101111", "--------"),  -- Read out PC onto the ADDR bus
+            ('0', '0', regCpyToPC,  regB_slv,  "----------------", "--------"),  -- Copy regB value into regPC
+            ('0', '0', regWideOut,  regPC_slv, "1111000000000000", "--------"),  -- Read out PC onto the ADDR bus
+            ('0', '0', regCpyToPC,  regC_slv,  "----------------", "--------"),  -- Copy regC value into regPC
+            ('0', '0', regWideOut,  regPC_slv, "1110001111001100", "--------")   -- Read out PC onto the ADDR bus
 
         );
     begin
@@ -122,6 +126,7 @@ begin
         for i in test_pattern'range loop
             -- Set input signals
             rst <= test_pattern(i).rst;
+            incPC <= test_pattern(i).incPC;
             opCode <= test_pattern(i).opCode;
             regAddrBus <= test_pattern(i).regAddrBus;
 
